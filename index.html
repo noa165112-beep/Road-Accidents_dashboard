@@ -25,14 +25,20 @@
                 <p class="subtitle">Where and when do accidents with casualties happen, and which ones turn severe or fatal?</p>
             </div>
         </div>
-        <nav class="tabs" role="tablist" aria-label="Dashboards">
-            <button id="tab-overview" class="tab active" role="tab" aria-selected="true" data-view="overview">
-                <span class="tab-num">1</span> Where &amp; When
-            </button>
-            <button id="tab-severity" class="tab" role="tab" aria-selected="false" data-view="severity">
-                <span class="tab-num">2</span> What Makes It Deadly
-            </button>
-        </nav>
+        <div class="hero-actions">
+            <nav class="tabs" role="tablist" aria-label="Dashboards">
+                <button id="tab-overview" class="tab active" role="tab" aria-selected="true" data-view="overview">
+                    <span class="tab-num">1</span> Where &amp; When
+                </button>
+                <button id="tab-severity" class="tab" role="tab" aria-selected="false" data-view="severity">
+                    <span class="tab-num">2</span> What Makes It Deadly
+                </button>
+            </nav>
+            <a href="Final_Project_Report.docx" class="btn-report" download title="Download Final Project Report (.docx)">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+                <span>Project Report (.docx)</span>
+            </a>
+        </div>
     </header>
 
     <!-- Global filters: shared by both dashboards -->
@@ -181,6 +187,10 @@
         <p>
             <b>Data:</b> Israel Central Bureau of Statistics, <a href="https://data.gov.il/he/datasets/lamas/2023-puf" target="_blank" rel="noopener">Road accidents with casualties 2024 (data.gov.il)</a>.
             8,315 accidents, of which 8,293 have a valid location and are shown here.
+        </p>
+        <p>
+            <b>Project Report:</b> <a href="Final_Project_Report.docx" download>Final_Project_Report.docx (Download Word Report)</a> · 
+            <b>Source Code:</b> <a href="https://github.com/noa165112-beep/Road-Accidents_dashboard" target="_blank" rel="noopener">GitHub Repository</a>
         </p>
         <p>
             <b>Notes:</b> "Serious" = fatal + severe. Shares based on fewer than 10 accidents are hidden. Counts are not normalised by traffic volume or population.
