@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Accidents in Israel 2024 · Interactive Dashboard</title>
+    <meta name="description" content="Interactive visualization of all 8,293 road accidents with casualties in Israel in 2024 (CBS data): where and when they happen, and which ones turn severe or fatal.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="hero">
+        <div class="brand">
+            <div class="logo" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div>
+                <h1>Road Accidents in Israel <span class="year">2024</span></h1>
+                <p class="subtitle">Where and when do accidents with casualties happen, and which ones turn severe or fatal?</p>
+            </div>
+        </div>
+        <nav class="tabs" role="tablist" aria-label="Dashboards">
+            <button id="tab-overview" class="tab active" role="tab" aria-selected="true" data-view="overview">
+                <span class="tab-num">1</span> Where &amp; When
+            </button>
+            <button id="tab-severity" class="tab" role="tab" aria-selected="false" data-view="severity">
+                <span class="tab-num">2</span> What Makes It Deadly
+            </button>
+        </nav>
+    </header>
+
+    <!-- Global filters: shared by both dashboards -->
+    <section class="controls" aria-label="Filters">
+        <div class="control-group">
+            <span class="control-label">Severity</span>
+            <div class="segmented" id="severityFilter">
+                <button id="sev-all" class="seg active" data-value="All">All</button>
+                <button id="sev-fatal" class="seg" data-value="Fatal"><i class="dot fatal"></i>Fatal</button>
+                <button id="sev-severe" class="seg" data-value="Severe"><i class="dot severe"></i>Severe</button>
+                <button id="sev-light" class="seg" data-value="Light"><i class="dot light"></i>Light</button>
+            </div>
+        </div>
+        <div class="control-group">
+            <span class="control-label">Time</span>
+            <div class="segmented" id="lightFilter">
+                <button id="light-all" class="seg active" data-value="All">All</button>
+                <button id="light-day" class="seg" data-value="Day">☀ Day</button>
+                <button id="light-night" class="seg" data-value="Night">☾ Night</button>
+            </div>
+        </div>
+        <div class="chips" id="activeFilters" aria-live="polite"></div>
+        <button id="resetAll" class="reset" hidden>Reset all filters</button>
+    </section>
+
+    <!-- KPIs (always reflect all active filters) -->
+    <section class="kpis" aria-label="Key figures">
+        <div class="kpi"><span class="kpi-label">Accidents</span><span class="kpi-value" id="kpiTotal">–</span><span class="kpi-sub" id="kpiTotalSub">of 8,293</span></div>
+        <div class="kpi fatal"><span class="kpi-label"><i class="dot fatal"></i>Fatal</span><span class="kpi-value" id="kpiFatal">–</span><span class="kpi-sub" id="kpiFatalSub"></span></div>
+        <div class="kpi severe"><span class="kpi-label"><i class="dot severe"></i>Severe</span><span class="kpi-value" id="kpiSevere">–</span><span class="kpi-sub" id="kpiSevereSub"></span></div>
+        <div class="kpi light"><span class="kpi-label"><i class="dot light"></i>Light</span><span class="kpi-value" id="kpiLight">–</span><span class="kpi-sub" id="kpiLightSub"></span></div>
+        <div class="kpi share"><span class="kpi-label"><i class="dot share"></i>Serious share</span><span class="kpi-value" id="kpiShare">–</span><span class="kpi-sub">fatal + severe, of all severities</span></div>
+    </section>
+
+    <main>
+        <!-- ===================== Dashboard 1 ===================== -->
+        <section id="view-overview" class="view active" role="tabpanel" aria-labelledby="tab-overview">
+            <div class="grid-overview">
+                <article class="card map-card">
+                    <div class="card-head">
+                        <div>
+                            <h2>Where do accidents happen?</h2>
+                            <p class="hint">Each dot is one accident, coloured by severity. Click a dot for details. Use <b>Select area</b> to filter every chart to a region.</p>
+                        </div>
+                        <div class="tools">
+                            <div class="segmented small" id="mapMode">
+                                <button id="mode-points" class="seg active" data-value="points">Points</button>
+                                <button id="mode-density" class="seg" data-value="density">Density</button>
+                            </div>
+                            <button id="brushBtn" class="tool-btn" title="Drag a rectangle on the map to filter all charts">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 3"/></svg>
+                                Select area
+                            </button>
+                        </div>
+                    </div>
+                    <div id="map" aria-label="Map of accidents"></div>
+                </article>
+
+                <article class="card">
+                    <div class="card-head">
+                        <div>
+                            <h2>Day of week</h2>
+                            <p class="hint">Bars: number of accidents. Line: share that were fatal or severe. Click a bar to filter.</p>
+                        </div>
+                    </div>
+                    <div class="chart-box"><canvas id="dayChart" aria-label="Accidents by day of week"></canvas></div>
+                    <p class="insight" id="dayInsight"></p>
+                </article>
+
+                <article class="card">
+                    <div class="card-head">
+                        <div>
+                            <h2>Month</h2>
+                            <p class="hint">Same encoding as the day chart. Click a month to filter.</p>
+                        </div>
+                    </div>
+                    <div class="chart-box"><canvas id="monthChart" aria-label="Accidents by month"></canvas></div>
+                    <p class="insight" id="monthInsight"></p>
+                </article>
+
+                <article class="card span-all">
+                    <div class="card-head">
+                        <div>
+                            <h2>Most frequent accident types, by severity</h2>
+                            <p class="hint">Stacked bars split each type into fatal, severe and light accidents. Click a bar to filter by type.</p>
+                        </div>
+                    </div>
+                    <div class="chart-box tall"><canvas id="typeChart" aria-label="Accident types by severity"></canvas></div>
+                </article>
+            </div>
+        </section>
+
+        <!-- ===================== Dashboard 2 ===================== -->
+        <section id="view-severity" class="view" role="tabpanel" aria-labelledby="tab-severity">
+            <div class="grid-severity">
+                <article class="card span-all">
+                    <div class="card-head">
+                        <div>
+                            <h2>When is it most dangerous? Hour × day of week</h2>
+                            <p class="hint">Each cell is one hour of one weekday. Switch between the number of accidents and the share that were fatal or severe. Click a cell, a day or an hour to filter.</p>
+                        </div>
+                        <div class="tools">
+                            <div class="segmented small" id="heatMetric">
+                                <button id="metric-count" class="seg active" data-value="count">Accidents</button>
+                                <button id="metric-share" class="seg" data-value="share">% serious</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="heatmap" class="heatmap" role="grid" aria-label="Hour by day heatmap"></div>
+                    <div class="heat-footer">
+                        <div class="heat-legend" id="heatLegend"></div>
+                        <p class="insight" id="heatInsight"></p>
+                    </div>
+                </article>
+
+                <article class="card">
+                    <div class="card-head">
+                        <div>
+                            <h2>Common is not the same as dangerous</h2>
+                            <p class="hint">
+                                One bubble per accident type. Right = more frequent, higher = more often fatal or severe, bigger = more deaths.
+                                <span class="inline-legend"><i class="dot fatal"></i>above average <i class="dot light"></i>below average</span>
+                                Click a bubble to filter.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="chart-box tall"><canvas id="bubbleChart" aria-label="Frequency versus severity of accident types"></canvas></div>
+                    <p class="insight" id="bubbleInsight"></p>
+                </article>
+
+                <article class="card">
+                    <div class="card-head">
+                        <div>
+                            <h2>Severity mix by road setting and lighting</h2>
+                            <p class="hint">Each bar is 100% of the accidents in that setting. Click a bar to filter by road setting and day/night.</p>
+                        </div>
+                    </div>
+                    <div class="chart-box tall"><canvas id="roadChart" aria-label="Severity mix by road setting and lighting"></canvas></div>
+                    <p class="insight" id="roadInsight"></p>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>
+            <b>Data:</b> Israel Central Bureau of Statistics, <a href="https://data.gov.il/he/datasets/lamas/2023-puf" target="_blank" rel="noopener">Road accidents with casualties 2024 (data.gov.il)</a>.
+            8,315 accidents, of which 8,293 have a valid location and are shown here.
+        </p>
+        <p>
+            <b>Notes:</b> "Serious" = fatal + severe. Shares based on fewer than 10 accidents are hidden. Counts are not normalised by traffic volume or population.
+            Built with Leaflet, Leaflet.heat, Chart.js and Esri / OpenStreetMap base maps.
+        </p>
+    </footer>
+
+    <div id="tooltip" class="tooltip" role="tooltip"></div>
+
+    <!-- Libraries -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Data (as a script so the page also works when opened from disk) -->
+    <script src="data/accidents_data.js"></script>
+    <!-- App Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
